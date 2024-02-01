@@ -74,22 +74,22 @@ fn send_hook(s: SOCKET, buf: *const c_char, len: c_int, flags: c_int) -> c_int {
     }
 }
 
-pub fn init_hooks() -> Result<(), Box<dyn Error>> {
+pub unsafe fn init_hooks() -> Result<(), Box<dyn Error>> {
     let address = get_module_symbol_address("ws2_32.dll", "gethostbyname")
         .expect("could not find 'gethostbyname' address");
-    unsafe {
-        let target: FnGetHostByName = mem::transmute(address);
 
-        GetHostByName
-            .initialize(target, gethostbyname_hook)?
-            .enable()?;
+    let target: FnGetHostByName = mem::transmute(address);
 
-        let address =
-            get_module_symbol_address("ws2_32.dll", "send").expect("could not find 'send' address");
-        let target: FnSend = mem::transmute(address);
+    GetHostByName
+        .initialize(target, gethostbyname_hook)?
+        .enable()?;
 
-        Send.initialize(target, send_hook)?.enable()?;
-    }
+    let address =
+        get_module_symbol_address("ws2_32.dll", "send").expect("could not find 'send' address");
+    let target: FnSend = mem::transmute(address);
+
+    Send.initialize(target, send_hook)?.enable()?;
+
     Ok(())
 }
 

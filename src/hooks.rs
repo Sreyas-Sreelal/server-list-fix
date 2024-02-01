@@ -13,6 +13,7 @@ use windows::{
     },
 };
 
+// just a simple macro to convert Rust &str to C string
 macro_rules! unsafe_cstr {
     ($e: expr) => {{
         union Transmute {
@@ -30,7 +31,8 @@ macro_rules! unsafe_cstr {
         RES
     }}
 }
-
+// define our detour function
+// we only going to re route gethostbyname and send function from winsock library of windows
 static_detour! {
   static GetHostByName: unsafe extern "system" fn(*const c_char) -> c_int;
   static Send: unsafe extern "system" fn(SOCKET,*const c_char,c_int,c_int) -> c_int;
@@ -41,7 +43,8 @@ type FnSend = unsafe extern "system" fn(SOCKET, *const c_char, c_int, c_int) -> 
 
 fn gethostbyname_hook(name: *const c_char) -> c_int {
     let c_str: &CStr = unsafe { CStr::from_ptr(name) };
-
+    // client is trying to use gethostbyname to resolve lists.sa-mp.com
+    // we don't want that, instead we replace the hostname by the sam.markski.ar
     if c_str.to_str().unwrap() == "lists.sa-mp.com" {
         let hostname = unsafe_cstr!("sam.markski.ar");
         unsafe { GetHostByName.call(hostname.as_ptr()) }
@@ -52,8 +55,11 @@ fn gethostbyname_hook(name: *const c_char) -> c_int {
 
 fn send_hook(s: SOCKET, buf: *const c_char, len: c_int, flags: c_int) -> c_int {
     let c_str: &CStr = unsafe { CStr::from_ptr(buf) };
-
+    // client is trying to use socket functin send to send an http request
+    // if the end point contains /0.3.7/ (http://lists.sa-mp.com/0.3.7/...) that means that this an request to samp's official listing
+    // you can find these requests using tools like wireshark
     if c_str.to_str().unwrap().starts_with("GET /0.3.7/") {
+        // replace the request with our request to sam.markski.ar/api/GetMasterlist?version=0.3.7
         let request = unsafe_cstr!(
             "GET /api/GetMasterlist?version=0.3.7 HTTP/1.1
   Content-Type: text/html
@@ -75,6 +81,8 @@ fn send_hook(s: SOCKET, buf: *const c_char, len: c_int, flags: c_int) -> c_int {
 }
 
 pub unsafe fn init_hooks() -> Result<(), Box<dyn Error>> {
+    // initialised our hooks by getting address of gethostbyname and send from ws2_32 libary
+
     let address = get_module_symbol_address("ws2_32.dll", "gethostbyname")
         .expect("could not find 'gethostbyname' address");
 

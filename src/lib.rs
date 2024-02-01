@@ -12,7 +12,6 @@ use windows::{
     Win32::{
         Foundation::{BOOL, HANDLE, HMODULE, TRUE},
         System::{
-            Console::AllocConsole,
             LibraryLoader::{GetModuleFileNameA, LoadLibraryW},
             SystemInformation::GetSystemDirectoryW,
             SystemServices::DLL_PROCESS_ATTACH,
@@ -21,6 +20,9 @@ use windows::{
 };
 
 unsafe fn main() -> Result<(), Box<dyn Error>> {
+    // begin with setting up a proxy dll for actual version.dll
+    // obtain system directory to find the actual version.dll
+    // our version.dll will be loaded by the game as it's used by almost all windows applications
     let mut addr = [0; 100];
     GetSystemDirectoryW(Some(&mut addr));
 
@@ -37,10 +39,12 @@ unsafe fn main() -> Result<(), Box<dyn Error>> {
             .collect::<Vec<u16>>(),
     );
 
+    // load the actual version.dll into process
     let handle = LoadLibraryW(PCWSTR(addr.as_ptr()));
-
+    
     initialise_library_functions(handle.unwrap())?;
 
+    // get the name of executable that loaded our dll
     let mut name = [0; 255];
     GetModuleFileNameA(HMODULE(0), &mut name);
     let name: Vec<u8> = name
@@ -48,12 +52,14 @@ unsafe fn main() -> Result<(), Box<dyn Error>> {
         .iter()
         .filter_map(|x| if *x != b'\0' { Some(*x) } else { None })
         .collect();
-
     let name = from_utf8(&name).unwrap();
-
+    
+    // we only need to initialise the hooks for samp.exe 
+    // if anything else loaded our dll for example gta_sa.exe we're going to ignore
     if name.contains("samp.exe") {
         init_hooks()?;
     }
+
     Ok(())
 }
 
@@ -61,7 +67,7 @@ unsafe fn main() -> Result<(), Box<dyn Error>> {
 #[allow(non_snake_case)]
 unsafe extern "system" fn DllMain(_hinst: HANDLE, reason: u32, _reserved: *mut c_void) -> BOOL {
     if reason == DLL_PROCESS_ATTACH {
-        AllocConsole().unwrap();
+        // AllocConsole().unwrap();
         BOOL::from(main().is_ok())
     } else {
         TRUE

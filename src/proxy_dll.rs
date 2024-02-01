@@ -5,6 +5,7 @@ use windows::{
     Win32::{Foundation::HMODULE, System::LibraryLoader::GetProcAddress},
 };
 
+// basically create a proxy function to all exported functions found in version.dll
 macro_rules! wrapper_gen_func {
     ($name:tt) => {
         paste! {
@@ -25,6 +26,8 @@ macro_rules! wrapper_gen_func {
     };
 }
 
+// to view the list of exported functions use tools like dumpbin 
+// dumpbin /exports version.dll
 wrapper_gen_func!(GetFileVersionInfoA);
 wrapper_gen_func!(GetFileVersionInfoByHandle);
 wrapper_gen_func!(GetFileVersionInfoExW);
@@ -42,6 +45,7 @@ wrapper_gen_func!(VerQueryValueA);
 wrapper_gen_func!(VerQueryValueW);
 
 pub unsafe fn initialise_library_functions(handle: HMODULE) -> Result<(), Box<dyn Error>> {
+    // macro used to initialise our global variables with appropriate addresses of corresponding functions found in loaded dll
     macro_rules! init_address {
         ($name:tt) => {
             paste! {
@@ -50,7 +54,7 @@ pub unsafe fn initialise_library_functions(handle: HMODULE) -> Result<(), Box<dy
             }
         };
     }
-
+    
     init_address!(GetFileVersionInfoA);
     init_address!(GetFileVersionInfoByHandle);
     init_address!(GetFileVersionInfoExW);

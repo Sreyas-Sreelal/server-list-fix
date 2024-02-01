@@ -62,10 +62,10 @@ fn send_hook(s: SOCKET, buf: *const c_char, len: c_int, flags: c_int) -> c_int {
         // replace the request with our request to sam.markski.ar/api/GetMasterlist?version=0.3.7
         let request = unsafe_cstr!(
             "GET /api/GetMasterlist?version=0.3.7 HTTP/1.1
-  Content-Type: text/html
-  Host: sam.markski.ar
-  Accept: text/html, */*
-  User-Agent: Mozilla/3.0 (compatible; SA:MP v0.3.7)\r\n\r\n"
+Content-Type: text/html
+Host: sam.markski.ar
+Accept: text/html, */*
+User-Agent: Mozilla/3.0 (compatible; SA:MP v0.3.7)\r\n\r\n"
         );
         unsafe {
             Send.call(

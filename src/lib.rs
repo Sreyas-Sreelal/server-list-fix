@@ -41,7 +41,7 @@ unsafe fn main() -> Result<(), Box<dyn Error>> {
 
     // load the actual version.dll into process
     let handle = LoadLibraryW(PCWSTR(addr.as_ptr()));
-    
+
     initialise_library_functions(handle.unwrap())?;
 
     // get the name of executable that loaded our dll
@@ -53,8 +53,8 @@ unsafe fn main() -> Result<(), Box<dyn Error>> {
         .filter_map(|x| if *x != b'\0' { Some(*x) } else { None })
         .collect();
     let name = from_utf8(&name).unwrap();
-    
-    // we only need to initialise the hooks for samp.exe 
+
+    // we only need to initialise the hooks for samp.exe
     // if anything else loaded our dll for example gta_sa.exe we're going to ignore
     if name.contains("samp.exe") {
         init_hooks()?;
@@ -67,7 +67,6 @@ unsafe fn main() -> Result<(), Box<dyn Error>> {
 #[allow(non_snake_case)]
 unsafe extern "system" fn DllMain(_hinst: HANDLE, reason: u32, _reserved: *mut c_void) -> BOOL {
     if reason == DLL_PROCESS_ATTACH {
-        // AllocConsole().unwrap();
         BOOL::from(main().is_ok())
     } else {
         TRUE

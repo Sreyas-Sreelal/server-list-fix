@@ -26,7 +26,7 @@ macro_rules! wrapper_gen_func {
     };
 }
 
-// to view the list of exported functions use tools like dumpbin 
+// to view the list of exported functions use tools like dumpbin
 // dumpbin /exports version.dll
 wrapper_gen_func!(GetFileVersionInfoA);
 wrapper_gen_func!(GetFileVersionInfoByHandle);
@@ -54,7 +54,7 @@ pub unsafe fn initialise_library_functions(handle: HMODULE) -> Result<(), Box<dy
             }
         };
     }
-    
+
     init_address!(GetFileVersionInfoA);
     init_address!(GetFileVersionInfoByHandle);
     init_address!(GetFileVersionInfoExW);
